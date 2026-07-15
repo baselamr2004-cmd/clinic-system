@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    // ====================PATIENT REGISTER====================
     public function showPatientRegister()
     {
         return view('auth.patient-register');
@@ -26,7 +25,7 @@ class AuthController extends Controller
             'gender' => 'nullable|in:male,female',
         ]);
 
-        $validated['password'] = Hash::make($validated['password']);
+        
         $patient = Patient::create($validated);
 
         Auth::guard('patient')->login($patient);
@@ -34,37 +33,44 @@ class AuthController extends Controller
         return redirect()->route('patient.dashboard');
     }
 
-    // ====================LOGIN====================
+    
     public function showLogin()
     {
         return view('auth.login');
     }
 
-    public function login(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-            'role' => 'required|in:patient,doctor,admin',
-        ]);
+   public function login(Request $request)
+{
+    $request->validate([
+        'email' => 'required|email',
+        'password' => 'required',
+        'role' => 'required|in:patient,doctor,admin',
+    ]);
 
-        $credentials = $request->only('email', 'password');
-        $guard = $request->role;
+    $guard = $request->role;
+    $modelClass = match ($guard) {
+        'patient' => \App\Models\Patient::class,
+        'doctor' => \App\Models\Doctor::class,
+        'admin' => \App\Models\Admin::class,
+    };
 
-        if (Auth::guard($guard)->attempt($credentials)) {
-            $request->session()->regenerate();
+    $user = $modelClass::where('email', $request->email)->first();
 
-            return match ($guard) {
-                'patient' => redirect()->route('patient.dashboard'),
-                'doctor' => redirect()->route('doctor.dashboard'),
-                'admin' => redirect()->route('admin.dashboard'),
-            };
-        }
-
+    if (! $user || $user->password !== $request->password) {
         return back()->withErrors(['email' => 'بيانات الدخول غير صحيحة'])->withInput();
     }
 
-    // ====================LOGOUT====================
+    Auth::guard($guard)->login($user);
+    $request->session()->regenerate();
+
+    return match ($guard) {
+        'patient' => redirect()->route('patient.dashboard'),
+        'doctor' => redirect()->route('doctor.dashboard'),
+        'admin' => redirect()->route('admin.dashboard'),
+    };
+}
+
+   
     public function logout(Request $request)
     {
         $guard = $request->input('guard', 'patient');

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Hash;
 
 class AdminController extends Controller
 {
-    // إحصائيات سريعة
+   
     public function dashboard()
     {
         $stats = [
@@ -27,14 +27,14 @@ class AdminController extends Controller
         return view('admin.dashboard', compact('stats'));
     }
 
-    // عرض كل الدكاترة + فورم إضافة
+    
     public function doctors()
     {
         $doctors = Doctor::all();
         return view('admin.doctors', compact('doctors'));
     }
 
-    // إضافة دكتور جديد
+    
     public function storeDoctor(Request $request)
     {
         $validated = $request->validate([
@@ -46,20 +46,20 @@ class AdminController extends Controller
             'bio' => 'nullable|string',
         ]);
 
-        $validated['password'] = Hash::make($validated['password']);
+       
         Doctor::create($validated);
 
         return back()->with('success', 'تمت إضافة الدكتور بنجاح');
     }
 
-    // حذف دكتور
+    
     public function deleteDoctor(Doctor $doctor)
     {
         $doctor->delete();
         return back()->with('success', 'تم حذف الدكتور');
     }
 
-    // عرض كل الحجوزات في النظام
+    
     public function appointments()
     {
         $appointments = Appointment::with(['patient', 'doctor'])
